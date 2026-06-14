@@ -1,0 +1,11 @@
+# Ignore these files from Prettier formatting
+node_modules
+.next
+dist
+build
+*.min.js
+*.min.css
+.git
+.env
+.env.local
+.env.*.local
