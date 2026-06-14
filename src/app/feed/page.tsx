@@ -395,7 +395,7 @@ export default function FeedPage() {
                     <div
                       className={cn(
                         'absolute inset-x-0 bottom-0 rounded-t-[24px] pt-6',
-                        'bg-primary/90 dark:bg-accent'
+                        'bg-primary/90'
                       )}
                     >
                       <button

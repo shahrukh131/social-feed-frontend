@@ -31,8 +31,8 @@ export function ThemeToggle() {
       <span
         className={cn(
           'absolute left-1/2 top-[4px] h-[30px] w-[30px] -translate-x-1/2 rounded-full transition-all duration-300',
-          'bg-[linear-gradient(180deg,#4aa8ff_0%,#1890FF_100%)] shadow-[0_10px_18px_rgba(24,144,255,0.25)]',
-          isDark && 'translate-y-[36px] bg-[linear-gradient(180deg,#3da2ff_0%,#1890FF_100%)] shadow-[0_10px_18px_rgba(24,144,255,0.38)]'
+          'bg-primary shadow-[0_10px_18px_rgba(24,144,255,0.25)]',
+          isDark && 'translate-y-[36px] shadow-[0_10px_18px_rgba(24,144,255,0.38)]'
         )}
       />
 
