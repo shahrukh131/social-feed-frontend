@@ -315,21 +315,12 @@ export default function RegisterPage() {
                     disabled={isPending}
                     className="inline-flex h-[40px] w-full items-center justify-center rounded-[4px] bg-[#1890FF] px-5 text-[15px] font-semibold text-white transition hover:bg-[#0d7fe6] active:bg-[#0a6fd1] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {isPending ? 'Creating account...' : 'Login now'}
+                    {isPending ? 'Creating account...' : 'Sign Up'}
                   </button>
                 </div>
               </form>
 
-              {/* Bottom link */}
-              <p className="text-center text-[14px] text-slate-500">
-                Dont have an account?{' '}
-                <Link
-                  href={APP_ROUTES.LOGIN}
-                  className="font-medium text-[#1890FF] transition hover:text-[#0d7fe6]"
-                >
-                  Create New Account
-                </Link>
-              </p>
+      
             </div>
           </section>
         </div>
