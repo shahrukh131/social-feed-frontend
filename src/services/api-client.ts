@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const AUTH_TOKEN_KEY = process.env.NEXT_PUBLIC_AUTH_TOKEN_KEY || 'auth_token'
 
 class ApiClient {
@@ -8,7 +7,6 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: API_BASE_URL,
       headers: {
         'Content-Type': 'application/json',
       },

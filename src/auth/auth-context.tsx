@@ -2,11 +2,11 @@
 
 import React, { createContext, useContext, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth.store'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { authService } from '@/services/auth.service'
+import { User } from '@/types'
 
 interface AuthContextType {
-  user: any
+  user: User | null
   isAuthenticated: boolean
   isLoading: boolean
   logout: () => void
@@ -15,16 +15,32 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: user, isLoading } = useCurrentUser()
-  const { setUser, setAuthenticated, logout: storeLogout } = useAuthStore()
-  const hasToken = authService.getToken()
+  const {
+    user,
+    isAuthenticated,
+    isLoading,
+    setUser,
+    setAuthenticated,
+    setLoading,
+    logout: storeLogout,
+  } = useAuthStore()
 
   useEffect(() => {
-    if (user) {
-      setUser(user)
+    setLoading(true)
+
+    const token = authService.getToken()
+    const storedUser = authService.getStoredUser()
+
+    if (token && storedUser) {
+      setUser(storedUser)
       setAuthenticated(true)
+    } else {
+      setUser(null)
+      setAuthenticated(false)
     }
-  }, [user, setUser, setAuthenticated])
+
+    setLoading(false)
+  }, [setAuthenticated, setLoading, setUser])
 
   const logout = () => {
     authService.logout()
@@ -35,8 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user || !!hasToken,
-        isLoading: !!hasToken && isLoading,
+        isAuthenticated,
+        isLoading,
         logout,
       }}
     >

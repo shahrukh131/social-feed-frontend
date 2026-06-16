@@ -1,21 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/store/auth.store'
-import { AuthToken } from '@/types'
+import { AuthResponse } from '@/types'
 
 export const useLogin = () => {
   const queryClient = useQueryClient()
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated)
+  const setUser = useAuthStore((state) => state.setUser)
 
   return useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const response = await authService.login(email, password)
-      return response.data as AuthToken
+      return authService.login(email, password)
     },
-    onSuccess: (token) => {
-      authService.setToken(token.access_token)
+    onSuccess: (response: AuthResponse) => {
+      authService.setToken(response.accessToken)
+      authService.setUser(response.user)
+      setUser(response.user)
       setAuthenticated(true)
-      // Invalidate current user query to refetch
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
     },
   })
@@ -24,24 +25,27 @@ export const useLogin = () => {
 export const useRegister = () => {
   const queryClient = useQueryClient()
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated)
+  const setUser = useAuthStore((state) => state.setUser)
 
   return useMutation({
     mutationFn: async ({
       email,
       password,
-      fullName,
+      firstName,
+      lastName,
     }: {
       email: string
       password: string
-      fullName: string
+      firstName: string
+      lastName: string
     }) => {
-      const response = await authService.register(email, password, fullName)
-      return response.data as AuthToken
+      return authService.register(email, password, firstName, lastName)
     },
-    onSuccess: (token) => {
-      authService.setToken(token.access_token)
+    onSuccess: (response: AuthResponse) => {
+      authService.setToken(response.accessToken)
+      authService.setUser(response.user)
+      setUser(response.user)
       setAuthenticated(true)
-      // Invalidate current user query to refetch
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
     },
   })

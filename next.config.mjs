@@ -13,7 +13,7 @@ const nextConfig = {
     ],
   },
   rewrites: async () => {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
     return {
       beforeFiles: [],
@@ -21,7 +21,7 @@ const nextConfig = {
       fallback: [
         {
           source: '/api/:path*',
-          destination: `${apiBaseUrl}/api/:path*`,
+          destination: `${apiBaseUrl}/:path*`,
         },
       ],
     }

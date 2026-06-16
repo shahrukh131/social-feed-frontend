@@ -2,9 +2,6 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/api/auth/login',
     REGISTER: '/api/auth/register',
-    LOGOUT: '/api/auth/logout',
-    ME: '/api/auth/me',
-    REFRESH: '/api/auth/refresh',
   },
   POSTS: {
     FEED: '/api/posts/feed',
@@ -14,10 +11,12 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/api/posts/${id}`,
   },
   COMMENTS: {
-    CREATE: '/api/comments',
-    GET: (postId: string) => `/api/comments/${postId}`,
-    UPDATE: (id: string) => `/api/comments/${id}`,
-    DELETE: (id: string) => `/api/comments/${id}`,
+    CREATE: (postId: string) => `/api/posts/${postId}/comments`,
+    LIST: (postId: string) => `/api/posts/${postId}/comments`,
+    REPLIES: (commentId: string) => `/api/comments/${commentId}/replies`,
+    LIKE: (commentId: string) => `/api/comments/${commentId}/like`,
+    UNLIKE: (commentId: string) => `/api/comments/${commentId}/like`,
+    LIKES: (commentId: string) => `/api/comments/${commentId}/likes`,
   },
   LIKES: {
     POST: (postId: string) => `/api/likes/posts/${postId}`,

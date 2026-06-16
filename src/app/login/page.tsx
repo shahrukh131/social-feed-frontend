@@ -12,7 +12,7 @@ import { Toast } from '@/components/Toast'
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, 'Email is required').email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(1, 'Password is required').min(8, 'Password must be at least 8 characters'),
   rememberMe: z.boolean().default(true),
 })
 
@@ -83,7 +83,10 @@ export default function LoginPage() {
           window.setTimeout(() => router.push(APP_ROUTES.FEED), 1000)
         },
         onError: (error: any) => {
-          const errorMessage = error?.response?.data?.message || 'Login failed. Please try again.'
+          const message = error?.response?.data?.message
+          const errorMessage = Array.isArray(message)
+            ? message[0]
+            : message || 'Login failed. Please try again.'
           setAlertMessage({ type: 'error', message: errorMessage })
         },
       }

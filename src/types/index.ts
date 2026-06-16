@@ -6,6 +6,12 @@ export interface ApiResponse<T> {
   message?: string
 }
 
+export interface ApiErrorResponse {
+  statusCode: number
+  message: string | string[]
+  error?: string
+}
+
 export interface PaginatedResponse<T> {
   data: T[]
   total: number
@@ -14,28 +20,23 @@ export interface PaginatedResponse<T> {
   hasMore: boolean
 }
 
-export interface ApiErrorResponse {
-  statusCode: number
-  message: string
-  error?: string
-}
-
 // User types
 export interface User {
   id: string
   email: string
-  username: string
+  firstName: string
+  lastName: string
   fullName: string
+  username?: string
   avatar?: string
   bio?: string
   createdAt: string
   updatedAt: string
 }
 
-export interface AuthToken {
-  access_token: string
-  refresh_token?: string
-  expires_in: number
+export interface AuthResponse {
+  accessToken: string
+  user: User
 }
 
 // Post types
@@ -46,7 +47,7 @@ export interface Post {
   image?: string
   likes: number
   comments: number
-  shares: number
+  shares?: number
   liked: boolean
   createdAt: string
   updatedAt: string
@@ -63,7 +64,11 @@ export interface Comment {
   content: string
   author: User
   postId: string
+  parentCommentId?: string | null
   likes: number
+  liked?: boolean
+  replyCount?: number
+  replies?: Comment[]
   createdAt: string
   updatedAt: string
 }

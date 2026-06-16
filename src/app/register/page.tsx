@@ -2,7 +2,6 @@
 
 import { Poppins } from 'next/font/google'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useRegister } from '@/hooks/useAuth'
@@ -39,7 +38,12 @@ export default function RegisterPage() {
     setErrors({})
 
     const newErrors: typeof errors = {}
-    const derivedFullName = email.trim().split('@')[0] || 'User'
+    const emailName = email.trim().split('@')[0] || 'User'
+    const [derivedFirstName, ...restName] = emailName
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    const derivedLastName = restName.join(' ') || 'Member'
 
     if (!email.trim()) {
       newErrors.email = 'Email is required'
@@ -48,8 +52,8 @@ export default function RegisterPage() {
     }
     if (!password) {
       newErrors.password = 'Password is required'
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters'
     }
     if (!confirmPassword) {
       newErrors.confirmPassword = 'Repeat password is required'
@@ -66,15 +70,22 @@ export default function RegisterPage() {
     }
 
     register(
-      { email, password, fullName: derivedFullName },
+      {
+        email,
+        password,
+        firstName: derivedFirstName || 'User',
+        lastName: derivedLastName,
+      },
       {
         onSuccess: () => {
           setAlertMessage({ type: 'success', message: 'Account created! Redirecting...' })
           window.setTimeout(() => router.push(APP_ROUTES.FEED), 1000)
         },
         onError: (error: any) => {
-          const errorMessage =
-            error?.response?.data?.message || 'Registration failed. Please try again.'
+          const message = error?.response?.data?.message
+          const errorMessage = Array.isArray(message)
+            ? message[0]
+            : message || 'Registration failed. Please try again.'
           setAlertMessage({ type: 'error', message: errorMessage })
         },
       }

@@ -8,8 +8,7 @@ export const useCurrentUser = () => {
   return useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
-      const response = await authService.getCurrentUser()
-      return response.data as User
+      return authService.getStoredUser() as User | null
     },
     enabled: !!token,
     retry: false,

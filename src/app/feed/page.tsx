@@ -30,8 +30,9 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Toast } from '@/components/Toast'
 import { useAuthContext } from '@/auth/auth-context'
 import { APP_ROUTES } from '@/constants'
+import { commentsService } from '@/services/comments.service'
 import { postsService } from '@/services/posts.service'
-import type { PaginatedResponse, Post } from '@/types'
+import type { Comment, PaginatedResponse, Post } from '@/types'
 import { cn } from '@/lib/cn'
 import { formatDate, getInitials } from '@/lib/utils'
 
@@ -86,6 +87,11 @@ const engagementIcons = [
 export default function FeedPage() {
   const { user } = useAuthContext()
   const [posts, setPosts] = useState<Post[]>([])
+  const [commentsByPostId, setCommentsByPostId] = useState<Record<string, Comment[]>>({})
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({})
+  const [loadingCommentsByPostId, setLoadingCommentsByPostId] = useState<Record<string, boolean>>({})
+  const [submittingCommentsByPostId, setSubmittingCommentsByPostId] = useState<Record<string, boolean>>({})
   const [postContent, setPostContent] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isPosting, setIsPosting] = useState(false)
@@ -98,6 +104,10 @@ export default function FeedPage() {
   const displayName = user?.fullName || 'Dylan Field'
   const displayEmail = user?.email || 'dylan@figma.com'
   const profilePath = user?.id ? APP_ROUTES.PROFILE(user.id) : '#'
+  const extractErrorMessage = (error: any, fallback: string) => {
+    const message = error?.response?.data?.message
+    return Array.isArray(message) ? message[0] : message || fallback
+  }
 
   const feedPosts = useMemo(() => {
     if (posts.length > 0) {
@@ -111,6 +121,8 @@ export default function FeedPage() {
         author: {
           id: 'mock-author-1',
           email: displayEmail,
+          firstName: 'Karim',
+          lastName: 'Saif',
           username: 'karimsaif',
           fullName: 'Karim Saif',
           createdAt: new Date().toISOString(),
@@ -140,7 +152,7 @@ export default function FeedPage() {
 
         setPosts(feedItems)
       } catch (error: any) {
-        setErrorMessage(error?.response?.data?.message || 'Unable to load the feed right now.')
+        setErrorMessage(extractErrorMessage(error, 'Unable to load the feed right now.'))
       } finally {
         setIsLoading(false)
       }
@@ -171,10 +183,79 @@ export default function FeedPage() {
     } catch (error: any) {
       setToast({
         type: 'error',
-        message: error?.response?.data?.message || 'Unable to create post right now.',
+        message: extractErrorMessage(error, 'Unable to create post right now.'),
       })
     } finally {
       setIsPosting(false)
+    }
+  }
+
+  const loadComments = async (postId: string, force = false) => {
+    if (loadingCommentsByPostId[postId] || (!force && commentsByPostId[postId])) {
+      return
+    }
+
+    try {
+      setLoadingCommentsByPostId((current) => ({ ...current, [postId]: true }))
+      const comments = await commentsService.getPostComments(postId)
+      setCommentsByPostId((current) => ({ ...current, [postId]: comments }))
+    } catch (error: any) {
+      setToast({
+        type: 'error',
+        message: extractErrorMessage(error, 'Unable to load comments right now.'),
+      })
+    } finally {
+      setLoadingCommentsByPostId((current) => ({ ...current, [postId]: false }))
+    }
+  }
+
+  const toggleComments = (postId: string) => {
+    setExpandedComments((current) => {
+      const nextExpanded = !current[postId]
+
+      if (nextExpanded) {
+        void loadComments(postId)
+      }
+
+      return { ...current, [postId]: nextExpanded }
+    })
+  }
+
+  const handleCommentSubmit = async (postId: string) => {
+    const trimmedComment = (commentDrafts[postId] ?? '').trim()
+
+    if (!trimmedComment) {
+      setToast({ type: 'error', message: 'Write a comment before sending.' })
+      return
+    }
+
+    try {
+      setSubmittingCommentsByPostId((current) => ({ ...current, [postId]: true }))
+      const response = await commentsService.createComment(postId, trimmedComment)
+      const createdComment = response.data
+
+      if (createdComment) {
+        setCommentsByPostId((current) => ({
+          ...current,
+          [postId]: [...(current[postId] ?? []), createdComment],
+        }))
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId ? { ...post, comments: post.comments + 1 } : post
+          )
+        )
+      }
+
+      setExpandedComments((current) => ({ ...current, [postId]: true }))
+      setCommentDrafts((current) => ({ ...current, [postId]: '' }))
+      setToast({ type: 'success', message: 'Comment posted successfully.' })
+    } catch (error: any) {
+      setToast({
+        type: 'error',
+        message: extractErrorMessage(error, 'Unable to post your comment right now.'),
+      })
+    } finally {
+      setSubmittingCommentsByPostId((current) => ({ ...current, [postId]: false }))
     }
   }
 
@@ -639,9 +720,12 @@ export default function FeedPage() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => toggleComments(post.id)}
                           className={cn(
                             'flex h-9 items-center justify-center gap-2 rounded-[2px] text-[14px] transition',
-                            'text-foreground hover:bg-accent'
+                            expandedComments[post.id]
+                              ? 'bg-accent text-accent-foreground'
+                              : 'text-foreground hover:bg-accent'
                           )}
                         >
                           <MessageCircle className="h-4 w-4" />
@@ -659,6 +743,38 @@ export default function FeedPage() {
                         </button>
                       </div>
 
+                      {expandedComments[post.id] ? (
+                        <div className="mb-4 space-y-3 rounded-[18px] bg-muted/50 p-4">
+                          {loadingCommentsByPostId[post.id] ? (
+                            <p className="text-sm text-muted-foreground">Loading comments...</p>
+                          ) : (commentsByPostId[post.id] ?? []).length > 0 ? (
+                            <div className="space-y-3">
+                              {(commentsByPostId[post.id] ?? []).map((comment) => (
+                                <div key={comment.id} className="rounded-2xl bg-background px-4 py-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">
+                                        {comment.author.fullName}
+                                      </p>
+                                      <p className="mt-1 text-sm text-foreground/90">
+                                        {comment.content}
+                                      </p>
+                                    </div>
+                                    <span className="shrink-0 text-xs text-muted-foreground">
+                                      {formatDate(comment.createdAt)}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No comments yet. Start the conversation.
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
+
                       <div className="rounded-[18px] bg-muted px-4 py-2">
                         <div className="flex items-center gap-3">
                           <Image
@@ -671,13 +787,39 @@ export default function FeedPage() {
                           <input
                             type="text"
                             placeholder="Write a comment"
+                            value={commentDrafts[post.id] ?? ''}
+                            onChange={(event) =>
+                              setCommentDrafts((current) => ({
+                                ...current,
+                                [post.id]: event.target.value,
+                              }))
+                            }
+                            onFocus={() => {
+                              setExpandedComments((current) => ({ ...current, [post.id]: true }))
+                              void loadComments(post.id)
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' && !event.shiftKey) {
+                                event.preventDefault()
+                                void handleCommentSubmit(post.id)
+                              }
+                            }}
                             className={cn(
                               'h-8 w-full bg-transparent text-[14px] outline-none',
                               'text-foreground placeholder:text-muted-foreground'
                             )}
                           />
-                          <button type="button" className="text-muted-foreground">
-                            <Bell className="h-4 w-4" />
+                          <button
+                            type="button"
+                            onClick={() => void handleCommentSubmit(post.id)}
+                            disabled={submittingCommentsByPostId[post.id]}
+                            className="text-muted-foreground transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {submittingCommentsByPostId[post.id] ? (
+                              <Bell className="h-4 w-4 animate-pulse" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
                           </button>
                         </div>
                       </div>
